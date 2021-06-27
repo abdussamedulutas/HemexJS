@@ -1,0 +1,26 @@
+{
+  "name": "hemex",
+  "version": "0.1.0",
+  "description": "Hemex Lexign and Parsign Tool",
+  "main": "Hemex.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abdussamedulutas/HemexJS.git"
+  },
+  "keywords": [
+    "Hemex",
+    "javascriprt",
+    "lexer",
+    "parser"
+  ],
+  "author": "zences-software@hotmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/abdussamedulutas/HemexJS/issues",
+    "email": "zences-software@hotmail.com"
+  },
+  "homepage": "https://github.com/abdussamedulutas/HemexJS#readme"
+}
