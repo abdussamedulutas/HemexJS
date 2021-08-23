@@ -170,15 +170,8 @@ function JSONParser()
 
     this.parse = function(text){
         hmx.setText(text);
-        let value = tryParseScope(hmx);
-        debugger;
+        this.map = tryParseScope(hmx);
     }
 }
 
 module.exports = JSONParser;
-
-// Testing
-let u = new JSONParser();
-u.parse(`[ "Merhab",56    ,  {"abc":false,85:14} ]`);
-// looking result
-console.log(u.map);
