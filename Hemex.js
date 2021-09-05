@@ -351,7 +351,7 @@ Hemex.prototype.readNumber = function(){
                 break;
             }
             case 'b':{
-                base = 16;
+                base = 2;
                 this.nextChar();
                 data.push('0b')
                 break;
