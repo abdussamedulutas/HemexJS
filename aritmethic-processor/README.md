@@ -3,7 +3,7 @@
 ## Usage:
 
 
-Sending and parsing from jsonparser
+Sending and parsing from ArithmeticParser
 ```javascript
 //Create parser initializer
 let aParser = new ArithmeticParser();
