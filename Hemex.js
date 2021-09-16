@@ -389,12 +389,17 @@ Hemex.prototype.readNumber = function(){
                     break;
                 }else return false;
             }
-            case 'A': case 'a':
-            case 'B': case 'b':
-            case 'C': case 'c':
-            case 'D': case 'd':
+            case 'A':
+            case 'a':
+            case 'B':
+            case 'b':
+            case 'C':
+            case 'c':
+            case 'D':
+            case 'd':
             /* case 'E': case 'e': */
-            case 'F': case 'f':{
+            case 'F':
+            case 'f':{
                 if(base >= 16){
                     data.push(c);
                     break;
@@ -412,7 +417,8 @@ Hemex.prototype.readNumber = function(){
                 };
                 break;
             }
-            case 'E':case 'e':{
+            case 'E':
+            case 'e':{
                 if(this.getChar(1)!='+'){
                     if(base == 16){
                         data.push(c);
