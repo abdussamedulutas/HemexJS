@@ -121,8 +121,13 @@ function SaxParser()
             return [tagName, options,[]];
         }else if(hmx.include('>')){
             hmx.nextChar();
-            let childs = hmx.gather('tryParseScope');
+            let childs = hmx.gather('tryParseScope',true);
             hmx.gather("trySkipWhiteSpace");
+            let closeTag = '</'+tagName+'>';
+            if(hmx.include(closeTag))
+            {
+                hmx.toChar(closeTag.length);
+            }
             return [tagName, options,childs];
         }else{
             hmx.rejectPosition();
@@ -142,11 +147,17 @@ function SaxParser()
             data = ['<'];
             hmx.nextChar();
         };
-        data.push(hmx.readWhileFunc(()=>{
+        let f = hmx.readWhileFunc(()=>{
             return !hmx.isChar('<')
-        }));
+        });
+        if(f) data.push(f);
         hmx.acceptPosition();
-        return data.join('').trim();
+        if(data.length)
+        {
+            return data.join('').trim();
+        }else{
+            return null;
+        }
     });
 
     // Lexing : Comments
@@ -178,7 +189,7 @@ function SaxParser()
     // Lexing : Parsing scope
     hmx.addLexer({
         name:"tryParseScope",
-    },function(hmx){
+    },function(hmx,eatBrokenTag){
         let childs = [];
         hmx.while(()=>{
             hmx.gather("trySkipWhiteSpace");
@@ -195,7 +206,7 @@ function SaxParser()
                 item = hmx.gather("tryParseComment");
             };
             if(!item){
-                item = hmx.gather("tryParseData",true);
+                item = hmx.gather("tryParseData",eatBrokenTag ? false : true);
                 if(item)
                 {
                     childs.push(['#data',item])
