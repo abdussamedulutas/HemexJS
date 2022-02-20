@@ -467,5 +467,46 @@ Hemex.prototype.readNumber = function(){
     return data.length == 0 ? false : [data.join(''),base]
 }
 
+/**
+ * @type {Map<string,{name:string,priority:number,caller()}>}
+ */
+Hemex.prototype.lexers = new Map();
+
+/**
+ * @param {{name:string,priority:number}} options 
+ * @param {(hmx:Hemex,any?) => any} caller
+ */
+ Hemex.prototype.addLexer = function(options,caller){
+    if(!this.lexers.has(options.name))
+    {
+        this.lexers.set(options.name,{
+            name: options.name,
+            priority: options.priority,
+            caller: caller
+        })
+    }
+};
+Hemex.prototype.gatherStack = [];
+Hemex.prototype.gatherDepth = 0;
+/**
+ * @param {string} jobname 
+ * @param {any?} scope
+ */
+Hemex.prototype.gather = function(jobname, scope){
+    this.gatherStack.push({jobname, depth: this.gatherDepth});
+    if(this.lexers.has(jobname))
+    {
+        let {caller} = this.lexers.get(jobname);
+        this.gatherDepth++;
+        try{
+            let result = caller(this, scope);
+            this.gatherDepth--;
+            return result;
+        }catch(i){
+            this.gatherDepth--;
+            return null;
+        }
+    }
+};
 
 module.exports = Hemex;
