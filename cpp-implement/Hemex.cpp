@@ -74,6 +74,10 @@ namespace Hemex
                 };
                 return;
             }
+            ValueType at(size_t key){
+                MapItem<KeyType,ValueType> item = this->e.at(key);
+                return item.value;
+            }
             MapPos<KeyType,ValueType> has(KeyType key){
                 MapPos<KeyType,ValueType> e;
                 int size = this->e.size();
@@ -361,24 +365,6 @@ namespace Hemex
         {
             this->setOffset(this->getOffset() + n);
         }
-        std::string readWhileFunc(bool (*callback)(char,bool), bool p = false)
-        {
-            std::string result = std::string();
-            while(this->isEnd())
-            {
-                bool sonuc = callback(this->getChar(),p);
-                if(sonuc)
-                {
-                    result.push_back(this->getChar());
-                }
-                else
-                {
-                    return result;
-                }
-                this->nextChar();
-            }
-            return result;
-        }
         std::string readWhileFunc(std::function<bool(char,bool)> callback, bool p = false)
         {
             std::string result = std::string();
@@ -397,18 +383,6 @@ namespace Hemex
             }
             return result;
         }
-        void Each(bool (*callback)(char,bool), bool p = false)
-        {
-            while(this->isEnd())
-            {
-                bool sonuc = callback(this->getChar(),p);
-                if(!sonuc)
-                {
-                    return;
-                }
-                this->nextChar();
-            }
-        }
         void Each(std::function<bool(char,bool)> callback, bool p = false)
         {
             while(this->isEnd())
@@ -422,17 +396,6 @@ namespace Hemex
             }
         }
         void While(std::function<bool(char,bool)> callback, bool reverse = false)
-        {
-            while(!this->isEnd())
-            {
-                bool sonuc = callback(this->getChar(),reverse);
-                if(!sonuc)
-                {
-                    return;
-                }
-            }
-        }
-        void While(bool (*callback)(char,bool), bool reverse = false)
         {
             while(!this->isEnd())
             {
@@ -538,19 +501,27 @@ namespace Hemex
         }
         std::string getLine()
         {
-            return this->readWhileFunc(this->isNewLine);
+            return this->readWhileFunc([](char c,bool b) -> bool {
+                return Hemex::isNewLine(c,b);
+            });
         }
         std::string readNumbers()
         {
-            return this->readWhileFunc(this->isNumber);
+            return this->readWhileFunc([](char c,bool b) -> bool {
+                return Hemex::isNumber(c,b);
+            });
         }
         std::string readLetters()
         {
-            return this->readWhileFunc(this->isLetter);
+            return this->readWhileFunc([](char c,bool b) -> bool {
+                return Hemex::isLetter(c,b);
+            });
         }
         std::string readWhitespace()
         {
-            return this->readWhileFunc(this->isWhiteSpace);
+            return this->readWhileFunc([](char c,bool b) -> bool {
+                return Hemex::isWhiteSpace(c,b);
+            });
         }
         bool include(std::string word,bool accept = true)
         {
@@ -582,8 +553,7 @@ namespace Hemex
             bool * flags = (bool *) calloc(arraySize,sizeof(bool));
             for (int T = 0; T < arraySize; T++) flags[T] = true;
             int index = 0;
-            while(this->isEnd())
-            {
+            this->While([&](char e,bool reserve) -> bool {
                 bool stopLoop = true;
                 for (int T = 0; T < arraySize; T++)
                 {
@@ -592,7 +562,7 @@ namespace Hemex
                         continue;
                     }
                     stopLoop = false;
-                    flags[T] = flags[T] && arrays.at(T).at(index) == this->getChar();
+                    flags[T] = flags[T] && arrays.at(T).at(index) == e;
                 }
                 index++;
                 bool allFlags = true;
@@ -604,9 +574,10 @@ namespace Hemex
                         if(result.success == false) result.success = true;
                     }
                 };
-                if(!stopLoop && allFlags) break;
+                if(!stopLoop && allFlags) return false;
                 else this->nextChar();
-            };
+                return true;
+            });
             int indis = 0;
             for (int T = 0; T < arraySize; T++)
                 if(flags[T])
@@ -788,4 +759,36 @@ namespace Hemex
             return memory;
         }
     };
+    class HemexMapTree
+    {
+        std::string name;
+        std::string type;
+        Map<std::string, std::string> attributes;
+        Map<std::string, HemexMapTree> childrens;
+        HemexMapTree operator[](int index)
+        {
+            return this->childrens.at(index);
+        }
+        HemexMapTree operator[](std::string index)
+        {
+            MapPos<std::string, HemexMapTree> k = this->childrens.has(index);
+            if(k.finded)
+            {
+                return k.mapitem.value;
+            }
+        }
+    };
+    char * readAllFile(std::string path)
+    {
+        FILE *file;
+        file = fopen(path.data(), "r");
+        fseek(file, 0, SEEK_END);
+        long fsize = ftell(file);
+        fseek(file, 0, SEEK_SET);
+        char * content = (char *) malloc(fsize + 1);
+        fread(content, fsize, 1, file);
+        fclose(file);
+        content[fsize] = 0;
+        return content;
+    }
 }
