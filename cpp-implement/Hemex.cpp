@@ -1,0 +1,791 @@
+#include <string>
+#include <vector>
+#include <functional>
+#include <stdio.h>
+
+typedef unsigned int positive;
+
+namespace Hemex
+{
+    enum HemexNumberBase {
+        BASE_2 = 2,
+        BASE_8 = 8,
+        BASE_10 = 10,
+        BASE_16 = 16
+    };
+    struct ReadNumberResult
+    {
+        bool isFloat = false;
+        bool success = false;
+        int base = BASE_10;
+        std::string text;
+    };
+
+    template <typename KeyType, typename ValueType>
+    struct MapItem
+    {
+        KeyType name;
+        ValueType value;
+    };
+    template <typename KeyType, typename ValueType>
+    struct MapPos
+    {
+        MapItem<KeyType,ValueType> mapitem;
+        int position = 0;
+        bool finded = false;
+    };
+
+    template <typename KeyType, typename ValueType>
+    class Map
+    {
+        private:
+            std::vector<MapItem<KeyType,ValueType>> e;
+        public:
+            void clear(){
+                this->e.clear();
+            }
+            void remove(KeyType key){
+                MapPos<KeyType,ValueType> find = this->has(key);
+                if(find.finded)
+                {
+                    this->e.erase(this->e.begin() + find.position);
+                }
+            }
+            std::vector<MapItem<KeyType,ValueType>> entries(){
+                return this->e;
+            }
+            void forEach(std::function<void(KeyType,ValueType,int)> callback){
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    MapItem<KeyType,ValueType> item = this->e.at(T);
+                    callback(item.name, item.value, T);
+                };
+            }
+            ValueType get(KeyType key){
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    MapItem<KeyType,ValueType> item = this->e.at(T);
+                    if(item.name == key)
+                    {
+                        return item.value;
+                    }
+                };
+                return;
+            }
+            MapPos<KeyType,ValueType> has(KeyType key){
+                MapPos<KeyType,ValueType> e;
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    MapItem<KeyType,ValueType> item = this->e.at(T);
+                    if(item.name == key)
+                    {
+                        e.finded = true;
+                        e.mapitem = item;
+                        e.position = T;
+                    }
+                };
+                return e;
+            }
+            std::vector<KeyType> keys(){
+                std::vector<KeyType> e;
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    MapItem<KeyType,ValueType> item = this->e.at(T);
+                    e.push_back(item.name);
+                };
+                return e;
+            }
+            void set(KeyType name, ValueType value){
+                MapItem<KeyType,ValueType> e;
+                e.name = name;
+                e.value = value;
+                MapPos<KeyType,ValueType> k = this->has(name);
+                if(k.finded == false)
+                {
+                    this->e.push_back(e);
+                }else{
+                    this->e.at(k.position).value = value;
+                }
+            }
+            int size(){
+                return this->e.size();
+            }
+            std::vector<ValueType> values(){
+                std::vector<ValueType> e;
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    MapItem<KeyType,ValueType> item = this->e.at(T);
+                    e.push_back(item.name);
+                };
+                return e;
+            }
+    };
+    template <typename ValueType>
+    struct SetPos
+    {
+        ValueType mapitem;
+        int position = 0;
+        bool finded = false;
+    };
+    template <typename ValueType>
+    class Set
+    {
+        private:
+            std::vector<ValueType> e;
+        public:
+            void clear(){
+                this->e.clear();
+            }
+            void remove(ValueType value){
+                SetPos<ValueType> find = this->has(value);
+                if(find.finded)
+                {
+                    this->e.erase(this->e.begin() + find.position);
+                }
+            }
+            std::vector<ValueType> entries(){
+                return this->e;
+            }
+            void forEach(std::function<void(ValueType,int)> callback){
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    ValueType item = this->e.at(T);
+                    callback(item.value, T);
+                };
+            }
+            SetPos<ValueType> has(ValueType key){
+                SetPos<ValueType> e;
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    ValueType item = this->e.at(T);
+                    if(item == key)
+                    {
+                        e.finded = true;
+                        e.mapitem = item;
+                        e.position = T;
+                    }
+                };
+                return e;
+            }
+            void add(ValueType value){
+                SetPos<ValueType> k = this->has(value);
+                if(k.finded == false)
+                {
+                    this->e.push_back(e);
+                }else{
+                    this->e.at(k.position).value = value;
+                }
+            }
+            int size(){
+                return this->e.size();
+            }
+            std::vector<ValueType> values(){
+                std::vector<ValueType> e;
+                int size = this->e.size();
+                for (int T = 0; T < size;T++)
+                {
+                    ValueType item = this->e.at(T);
+                    e.push_back(item);
+                };
+                return e;
+            }
+    };
+
+    struct IncludesResult
+    {
+        bool success;
+        std::vector<std::string> matched;
+        bool search(std::string word)
+        {
+            for(std::string matches : this->matched)
+            {
+                if(matches == word)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+
+    const char EOL = (char) 10;
+    const char whitespace[] = {
+        (char) 9,
+        (char) 10,
+        (char) 11,
+        (char) 12,
+        (char) 13,
+        (char) 32,
+        (char) 133
+    };
+    class Hemex
+    {
+        public:
+        positive offset = 0;
+        std::vector<positive> offsetMap;
+        std::string text;
+        positive length = 0;
+
+
+
+
+        void setText(std::string text)
+        {
+            this->text = text;
+            this->length = text.size();
+            this->offset = 0;
+            this->offsetMap = std::vector<positive>();
+        }
+
+        std::string getText()
+        {
+            return this->text;
+        }
+
+        void beginPosition()
+        {
+            this->offsetMap.push_back(this->getLastPosition());
+        }
+        positive getLastPosition()
+        {
+            if(this->offsetMap.size() == 0)
+            {
+                return this->offset;
+            }
+            else
+            {
+                return this->offsetMap[this->offsetMap.size() - 1];
+            }
+        }
+        void acceptPosition()
+        {
+            positive T = this->offsetMap[this->offsetMap.size() - 1];
+            this->setLastPosition(T);
+        }
+        void rejectPosition()
+        {
+            this->offsetMap.pop_back();
+        }
+        void setLastPosition(positive n)
+        {
+            if(this->offsetMap.size() == 0)
+            {
+                this->offset = n;
+            }
+            else
+            {
+                this->offsetMap[this->offsetMap.size() - 1] = n;
+            }
+        }
+        positive * positionRange()
+        {
+            std::size_t len = this->offsetMap.size();
+            if(len == 0)
+            {
+                return new positive[2]{0, this->offset};
+            }
+            else if(len == 1)
+            {
+                return new positive[2]{
+                    this->offset,
+                    this->offsetMap[len - 1]
+                };
+            }else{
+                return new positive[2]{
+                    this->offsetMap[len - 2],
+                    this->offsetMap[len - 1]
+                };
+            }
+        }
+        std::string getPositionRange()
+        {
+            positive *A = this->positionRange();
+            std::string mem;
+
+            for (positive i = A[0]; i < A[1];i++)
+            {
+                mem.push_back(this->text.at(i));
+            }
+            return mem;
+        }
+        positive getOffset()
+        {
+            return this->getLastPosition();
+        }
+        positive setOffset(positive n)
+        {
+            this->setLastPosition(n);
+            return this->getLastPosition();
+        }
+
+
+
+        char getChar(positive additionalOffset = 0)
+        {
+            return this->text.at(this->getOffset() + additionalOffset);
+        }
+
+        bool isChar(char b)
+        {
+            return this->getChar() == b;
+        }
+
+        char* dump(positive offset = 0, positive length = 10)
+        {
+            positive start = this->getLastPosition() + offset;
+            positive end = length;
+            std::string mem;
+
+            for (positive i = start; i < end;i++)
+            {
+                mem.push_back(this->text.at(i));
+            };
+            return mem.data();
+        }
+        bool isEnd()
+        {
+            return this->length > this->getOffset();
+        }
+        void nextChar()
+        {
+            this->setOffset(this->getOffset() + 1);
+        }
+        void toChar(positive n)
+        {
+            this->setOffset(this->getOffset() + n);
+        }
+        std::string readWhileFunc(bool (*callback)(char,bool), bool p = false)
+        {
+            std::string result = std::string();
+            while(this->isEnd())
+            {
+                bool sonuc = callback(this->getChar(),p);
+                if(sonuc)
+                {
+                    result.push_back(this->getChar());
+                }
+                else
+                {
+                    return result;
+                }
+                this->nextChar();
+            }
+            return result;
+        }
+        std::string readWhileFunc(std::function<bool(char,bool)> callback, bool p = false)
+        {
+            std::string result = std::string();
+            while(this->isEnd())
+            {
+                bool sonuc = callback(this->getChar(),p);
+                if(sonuc)
+                {
+                    result.push_back(this->getChar());
+                }
+                else
+                {
+                    return result;
+                }
+                this->nextChar();
+            }
+            return result;
+        }
+        void Each(bool (*callback)(char,bool), bool p = false)
+        {
+            while(this->isEnd())
+            {
+                bool sonuc = callback(this->getChar(),p);
+                if(!sonuc)
+                {
+                    return;
+                }
+                this->nextChar();
+            }
+        }
+        void Each(std::function<bool(char,bool)> callback, bool p = false)
+        {
+            while(this->isEnd())
+            {
+                bool sonuc = callback(this->getChar(),p);
+                if(!sonuc)
+                {
+                    return;
+                }
+                this->nextChar();
+            }
+        }
+        void While(std::function<bool(char,bool)> callback, bool reverse = false)
+        {
+            while(!this->isEnd())
+            {
+                bool sonuc = callback(this->getChar(),reverse);
+                if(!sonuc)
+                {
+                    return;
+                }
+            }
+        }
+        void While(bool (*callback)(char,bool), bool reverse = false)
+        {
+            while(!this->isEnd())
+            {
+                bool sonuc = callback(this->getChar(),reverse);
+                if(!sonuc)
+                {
+                    return;
+                }
+            }
+        }
+        static bool isNewLine(char a, bool reverse = true)
+        {
+            switch(a)
+            {
+                case EOL: return reverse;
+                default: return !reverse;
+            }
+        }
+        bool isNewLine()
+        {
+            char a = this->getChar();
+            bool reverse = true;
+            switch(a)
+            {
+                case EOL: return reverse;
+                default: return !reverse;
+            }
+        }
+        static bool isNumber(char a, bool reverse = true)
+        {
+            bool result = (a >= 48 && a <= 57);
+            return reverse ? !result : result;
+        }
+        bool isNumber()
+        {
+            char a = this->getChar();
+            bool reverse = true;
+            bool result = (a >= 48 && a <= 57);
+            return reverse ? result : !result;
+        }
+
+        static bool isBigLetter(char a, bool reverse = true)
+        {
+            bool result = (a >= 97 && a <= 122);
+            return reverse ? !result : result;
+        }
+        bool isBigLetter()
+        {
+            char a = this->getChar();
+            bool reverse = true;
+            bool result = (a >= 97 && a <= 122);
+            return reverse ? result : !result;
+        }
+        static bool isSmallLetter(char a, bool reverse = true)
+        {
+            bool result = (a >= 65 && a <= 90);
+            return reverse ? !result : result;
+        }
+        bool isSmallLetter()
+        {
+            char a = this->getChar();
+            bool reverse = true;
+            bool result = (a >= 65 && a <= 90);
+            return reverse ? result : !result;
+        }
+        static bool isLetter(char a, bool reverse = true)
+        {
+            bool result = Hemex::isSmallLetter(a,reverse) || Hemex::isBigLetter(a,reverse);
+            return reverse ? !result : result;
+        }
+        bool isLetter()
+        {
+            char a = this->getChar();
+            bool reverse = true;
+            bool result = this->isSmallLetter() || this->isBigLetter();
+            return reverse ? result : !result;
+        }
+        static bool isWhiteSpace(char a, bool reverse = true)
+        {
+            bool result = false;
+            for(char spacechar : whitespace)
+            {
+                if(a == spacechar)
+                {
+                    result = result || true;
+                }
+            }
+            return reverse ? !result : result;
+        }
+        bool isWhiteSpace()
+        {
+            char a = this->getChar();
+            bool reverse = true;
+            bool result = false;
+            for(char spacechar : whitespace)
+            {
+                if(a == spacechar)
+                {
+                    result = result || true;
+                }
+            }
+            return reverse ? result : !result;
+        }
+        std::string getLine()
+        {
+            return this->readWhileFunc(this->isNewLine);
+        }
+        std::string readNumbers()
+        {
+            return this->readWhileFunc(this->isNumber);
+        }
+        std::string readLetters()
+        {
+            return this->readWhileFunc(this->isLetter);
+        }
+        std::string readWhitespace()
+        {
+            return this->readWhileFunc(this->isWhiteSpace);
+        }
+        bool include(std::string word,bool accept = true)
+        {
+            this->beginPosition();
+            for (positive i = 0; i < word.size(); i++)
+            {
+                if(word.at(i) != this->getChar())
+                {
+                    this->rejectPosition();
+                    return false;
+                }
+                this->nextChar();
+            }
+            if(accept)
+            {
+                this->acceptPosition();
+            }
+            else
+            {
+                this->rejectPosition();
+            };
+            return true;
+        }
+        IncludesResult includes(std::vector<std::string> arrays, bool accept = true)
+        {
+            int arraySize = arrays.size();
+            IncludesResult result;
+            this->beginPosition();
+            bool * flags = (bool *) calloc(arraySize,sizeof(bool));
+            for (int T = 0; T < arraySize; T++) flags[T] = true;
+            int index = 0;
+            while(this->isEnd())
+            {
+                bool stopLoop = true;
+                for (int T = 0; T < arraySize; T++)
+                {
+                    if(!flags[T] || arrays.at(T).size() <= index)
+                    {
+                        continue;
+                    }
+                    stopLoop = false;
+                    flags[T] = flags[T] && arrays.at(T).at(index) == this->getChar();
+                }
+                index++;
+                bool allFlags = true;
+                for (int T = 0; T < arraySize; T++)
+                {
+                    if(flags[T])
+                    {
+                        allFlags = false;
+                        if(result.success == false) result.success = true;
+                    }
+                };
+                if(!stopLoop && allFlags) break;
+                else this->nextChar();
+            };
+            int indis = 0;
+            for (int T = 0; T < arraySize; T++)
+                if(flags[T])
+                    result.matched.push_back(arrays.at(T));
+            if(accept)
+            {
+                this->acceptPosition();
+            }
+            else
+            {
+                this->rejectPosition();
+            };
+            return result;
+        }
+        ReadNumberResult readNumber(bool addNumberHeader = false)
+        {
+            ReadNumberResult result;
+            bool nextDot = false;
+            if(this->isChar('0'))
+            {
+                this->nextChar();
+                switch (this->getChar())
+                {
+                    case 'x':{
+                        result.base = BASE_16;
+                        if(addNumberHeader){
+                            result.text.push_back('0');
+                            result.text.push_back('x');
+                        }
+                        this->nextChar();
+                        break;
+                    }
+                    case 'b':{
+                        result.base = BASE_2;
+                        if(addNumberHeader){
+                            result.text.push_back('0');
+                            result.text.push_back('b');
+                        }
+                        this->nextChar();
+                        break;
+                    }
+                    default:{
+                        result.base = BASE_8;
+                        if(addNumberHeader){
+                            result.text.push_back('0');
+                        }
+                        this->nextChar();
+                        break;
+                    }
+                }
+            }else{
+                result.base = BASE_10;
+            };
+
+
+            this->Each([&](char chr,bool reverse) -> bool {
+                char c = this->getChar();
+                switch (c)
+                {
+                    case '0':
+                    case '1':
+                    {
+                        result.text.push_back(c);
+                        break;
+                    }
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':{
+                        if(result.base >= 8){
+                            result.text.push_back(c);
+                            break;
+                        }else return false;
+                    }
+                    case '8':
+                    case '9':{
+                        if(result.base >= 10){
+                            result.text.push_back(c);
+                            break;
+                        }else return false;
+                    }
+                    case 'A':
+                    case 'a':
+                    case 'B':
+                    case 'b':
+                    case 'C':
+                    case 'c':
+                    case 'D':
+                    case 'd':
+                    case 'F':
+                    case 'f':{
+                        if(result.base >= 16){
+                            result.text.push_back(c);
+                            break;
+                        }else return false;
+                    }
+                    case '.':{
+                        if(!nextDot){
+                            if(result.text.size() == 0){
+                                result.text.push_back('0');
+                            }else result.text.push_back('.');
+                            nextDot = true;
+                            result.isFloat = true;
+                        }else{
+                            return false;
+                        };
+                        break;
+                    }
+                    case 'e':{
+                        if(this->getChar(1) != '+'){
+                            if(result.base == BASE_16){
+                                result.text.push_back(c);
+                                break;
+                            }else return false;
+                        };
+                        if(result.text.size() == 0){
+                            return false;
+                        };
+                        result.text.push_back('e');
+                        this->nextChar();
+                        if(this->isChar('+') || this->isChar('-')){
+                            result.text.push_back(this->getChar());
+                            this->nextChar();
+                        };
+                        this->Each([&](char chr,bool reverse) -> bool{
+                            switch(this->getChar()){
+                                case '0':
+                                case '1':
+                                case '2':
+                                case '3':
+                                case '4':
+                                case '5':
+                                case '6':
+                                case '7':
+                                case '8':
+                                case '9':{
+                                    result.text.push_back(this->getChar());
+                                    this->nextChar();
+                                    break;
+                                }
+                                default:{
+                                    return false;
+                                }
+                            };
+                            return true;
+                        });
+                    }
+                    default:{
+                        return false;
+                    }
+                };
+                return true;
+            });
+            return result;
+        };
+        Map<std::string,std::function<void(Hemex)>> lexers;
+
+        void addLexer(
+            std::string name,
+            std::function<void(Hemex)> callback
+        )
+        {
+            if(this->lexers.has(name).finded == false)
+            {
+                this->lexers.set(name, callback);
+            }
+        }
+        Map<std::string,std::string> gather(std::string jobname)
+        {
+            Map<std::string,std::string> memory;
+            MapPos<std::string, std::function<void (Hemex)>> bes;
+            bes = this->lexers.has(jobname);
+            if(bes.finded)
+            {
+                bes.mapitem.value(*this);
+            }
+            return memory;
+        }
+    };
+}

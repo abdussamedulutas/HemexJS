@@ -308,9 +308,9 @@ Hemex.prototype.include = function(words,next){
 /**
  * Controlling data
  * @param {Boolean} reverse
- * @returns {String}
+ * @returns {String|boolean}
  */
-Hemex.prototype.includes = function(arrays,next){
+Hemex.prototype.includes = function(arrays,accept){
     this.beginPosition();
     let flags = Array.from(arrays).fill(true);
     let index = 0;
@@ -326,7 +326,7 @@ Hemex.prototype.includes = function(arrays,next){
         return !stopLoop && flags.filter(function(val){return val}).length != 0;
     }.bind(this));
     let result = arrays.filter(function(_,index){return flags[index]});
-    if(next) this.acceptPosition();
+    if(accept) this.acceptPosition();
     else this.rejectPosition();
     return result.length == 0 ? false : result
 }
