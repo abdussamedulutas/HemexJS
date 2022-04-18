@@ -7,6 +7,16 @@ typedef unsigned int positive;
 
 namespace Hemex
 {
+
+    int min(int a, int b)
+    {
+        return a < b ? a : b;
+    }
+
+    int max(int a, int b)
+    {
+        return a > b ? a : b;
+    }
     enum HemexNumberBase {
         BASE_2 = 2,
         BASE_8 = 8,
@@ -232,10 +242,26 @@ namespace Hemex
     class Hemex
     {
         public:
+        bool DEBUG = false;
         positive offset = 0;
         std::vector<positive> offsetMap;
         std::string text;
         positive length = 0;
+        long int step = 0;
+        void log(const char * from,bool endline = true){
+            if(this->DEBUG)
+            {
+                printf(
+                    "\u001b[38;5;240m%02ld \u001b[33mOFSET: %04d\u001b[0m | \u001b[36mchr: [%c]\u001b[0m | \u001b[32m%s\u001b[0m",
+                    this->step,
+                    this->getOffset(),
+                    this->getChar(),
+                    from
+                );
+                if(endline) printf("\n");
+            }
+            this->step++;
+        }
 
 
 
@@ -246,6 +272,7 @@ namespace Hemex
             this->length = text.size();
             this->offset = 0;
             this->offsetMap = std::vector<positive>();
+            this->log("reset content");
         }
 
         std::string getText()
@@ -255,6 +282,7 @@ namespace Hemex
 
         void beginPosition()
         {
+            this->log("New Position Layer opened");
             this->offsetMap.push_back(this->getLastPosition());
         }
         positive getLastPosition()
@@ -270,11 +298,13 @@ namespace Hemex
         }
         void acceptPosition()
         {
+            this->log("Layer merged");
             positive T = this->offsetMap[this->offsetMap.size() - 1];
             this->setLastPosition(T);
         }
         void rejectPosition()
         {
+            this->log("Layer ejected");
             this->offsetMap.pop_back();
         }
         void setLastPosition(positive n)
@@ -343,8 +373,14 @@ namespace Hemex
 
         char* dump(positive offset = 0, positive length = 10)
         {
-            positive start = this->getLastPosition() + offset;
-            positive end = length;
+            positive start = this->getOffset() + offset;
+            positive end = min(
+                this->getOffset() + offset + length,
+                this->length
+            );
+
+            printf("start:%d|end:%d", start,end);
+
             std::string mem;
 
             for (positive i = start; i < end;i++)
@@ -355,37 +391,47 @@ namespace Hemex
         }
         bool isEnd()
         {
-            return this->length > this->getOffset();
+            bool result = this->length - 2 < this->getOffset();
+            return result;
         }
         void nextChar()
         {
+            if(this->isEnd()) return;
             this->setOffset(this->getOffset() + 1);
         }
         void toChar(positive n)
         {
+            if(this->isEnd()) return;
             this->setOffset(this->getOffset() + n);
         }
         std::string readWhileFunc(std::function<bool(char,bool)> callback, bool p = false)
         {
-            std::string result = std::string();
-            while(this->isEnd())
+            std::string result;
+            this->log("readWhileFunc begin");
+            while(!this->isEnd())
             {
                 bool sonuc = callback(this->getChar(),p);
                 if(sonuc)
                 {
+                    if(this->DEBUG){
+                        this->log("",false);
+                        printf("callback[] = %s\n",sonuc ? "true" : "\u001b[31mfalse\u001b[0m");
+                    }
                     result.push_back(this->getChar());
                 }
                 else
                 {
+                    this->log("readWhileFunc end");
                     return result;
                 }
                 this->nextChar();
             }
+            this->log("readWhileFunc end");
             return result;
         }
         void Each(std::function<bool(char,bool)> callback, bool p = false)
         {
-            while(this->isEnd())
+            while(!this->isEnd())
             {
                 bool sonuc = callback(this->getChar(),p);
                 if(!sonuc)
@@ -574,8 +620,10 @@ namespace Hemex
                         if(result.success == false) result.success = true;
                     }
                 };
-                if(!stopLoop && allFlags) return false;
-                else this->nextChar();
+                if(stopLoop || allFlags) return false;
+                else{
+                    this->nextChar();
+                }
                 return true;
             });
             int indis = 0;
@@ -761,6 +809,7 @@ namespace Hemex
     };
     class HemexMapTree
     {
+        public:
         std::string name;
         std::string type;
         Map<std::string, std::string> attributes;
@@ -785,10 +834,9 @@ namespace Hemex
         fseek(file, 0, SEEK_END);
         long fsize = ftell(file);
         fseek(file, 0, SEEK_SET);
-        char * content = (char *) malloc(fsize + 1);
+        char * content = (char *) malloc(fsize);
         fread(content, fsize, 1, file);
         fclose(file);
-        content[fsize] = 0;
         return content;
     }
 }
