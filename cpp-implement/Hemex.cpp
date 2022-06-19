@@ -1,18 +1,19 @@
+#ifndef HEMEX_LEXING_LIB
+
+#define HEMEX_LEXING_LIB
+
 #include <string>
 #include <vector>
 #include <functional>
-#include <stdio.h>
-
 typedef unsigned int positive;
 
 namespace Hemex
 {
-
     int min(int a, int b)
     {
         return a < b ? a : b;
     }
-
+    
     int max(int a, int b)
     {
         return a > b ? a : b;
@@ -248,41 +249,25 @@ namespace Hemex
         std::string text;
         positive length = 0;
         long int step = 0;
-        void log(const char * from,bool endline = true){
-            if(this->DEBUG)
-            {
-                printf(
-                    "\u001b[38;5;240m%02ld \u001b[33mOFSET: %04d\u001b[0m | \u001b[36mchr: [%c]\u001b[0m | \u001b[32m%s\u001b[0m",
-                    this->step,
-                    this->getOffset(),
-                    this->getChar(),
-                    from
-                );
-                if(endline) printf("\n");
-            }
-            this->step++;
-        }
-
-
-
 
         void setText(std::string text)
         {
+            if(text.size() == 0)
+            {
+                return;
+            }
             this->text = text;
             this->length = text.size();
             this->offset = 0;
             this->offsetMap = std::vector<positive>();
-            this->log("reset content");
         }
 
         std::string getText()
         {
             return this->text;
         }
-
         void beginPosition()
         {
-            this->log("New Position Layer opened");
             this->offsetMap.push_back(this->getLastPosition());
         }
         positive getLastPosition()
@@ -298,13 +283,11 @@ namespace Hemex
         }
         void acceptPosition()
         {
-            this->log("Layer merged");
             positive T = this->offsetMap[this->offsetMap.size() - 1];
             this->setLastPosition(T);
         }
         void rejectPosition()
         {
-            this->log("Layer ejected");
             this->offsetMap.pop_back();
         }
         void setLastPosition(positive n)
@@ -368,18 +351,17 @@ namespace Hemex
 
         bool isChar(char b)
         {
+            if(this->isEnd()) return false;
             return this->getChar() == b;
         }
 
-        char* dump(positive offset = 0, positive length = 10)
+        const char* dump(positive offset = 0, positive length = 10)
         {
             positive start = this->getOffset() + offset;
             positive end = min(
                 this->getOffset() + offset + length,
                 this->length
             );
-
-            printf("start:%d|end:%d", start,end);
 
             std::string mem;
 
@@ -391,7 +373,7 @@ namespace Hemex
         }
         bool isEnd()
         {
-            bool result = this->length - 2 < this->getOffset();
+            bool result = this->length <= this->getOffset();
             return result;
         }
         void nextChar()
@@ -407,26 +389,19 @@ namespace Hemex
         std::string readWhileFunc(std::function<bool(char,bool)> callback, bool p = false)
         {
             std::string result;
-            this->log("readWhileFunc begin");
             while(!this->isEnd())
             {
                 bool sonuc = callback(this->getChar(),p);
                 if(sonuc)
                 {
-                    if(this->DEBUG){
-                        this->log("",false);
-                        printf("callback[] = %s\n",sonuc ? "true" : "\u001b[31mfalse\u001b[0m");
-                    }
                     result.push_back(this->getChar());
                 }
                 else
                 {
-                    this->log("readWhileFunc end");
                     return result;
                 }
                 this->nextChar();
             }
-            this->log("readWhileFunc end");
             return result;
         }
         void Each(std::function<bool(char,bool)> callback, bool p = false)
@@ -599,7 +574,7 @@ namespace Hemex
             bool * flags = (bool *) calloc(arraySize,sizeof(bool));
             for (int T = 0; T < arraySize; T++) flags[T] = true;
             int index = 0;
-            this->While([&](char e,bool reserve) -> bool {
+            this->While([&](char e,bool reserve) -> bool{
                 bool stopLoop = true;
                 for (int T = 0; T < arraySize; T++)
                 {
@@ -608,7 +583,10 @@ namespace Hemex
                         continue;
                     }
                     stopLoop = false;
-                    flags[T] = flags[T] && arrays.at(T).at(index) == e;
+                    if(flags[T])
+                    {
+                        flags[T] = arrays.at(T).at(index) == e;
+                    }
                 }
                 index++;
                 bool allFlags = true;
@@ -617,19 +595,32 @@ namespace Hemex
                     if(flags[T])
                     {
                         allFlags = false;
-                        if(result.success == false) result.success = true;
                     }
                 };
-                if(stopLoop || allFlags) return false;
-                else{
+                if(stopLoop || allFlags)
+                {
+                    return false;
+                }
+                else
+                {
                     this->nextChar();
                 }
                 return true;
             });
+
+
             int indis = 0;
             for (int T = 0; T < arraySize; T++)
+            {
                 if(flags[T])
+                {
+                    if(result.success == false)
+                    {
+                        result.success = true;
+                    };
                     result.matched.push_back(arrays.at(T));
+                }
+            }
             if(accept)
             {
                 this->acceptPosition();
@@ -783,11 +774,11 @@ namespace Hemex
             });
             return result;
         };
-        Map<std::string,std::function<void(Hemex)>> lexers;
+        Map<std::string,std::function<void(Hemex*)>> lexers;
 
         void addLexer(
             std::string name,
-            std::function<void(Hemex)> callback
+            std::function<void(Hemex*)> callback
         )
         {
             if(this->lexers.has(name).finded == false)
@@ -795,16 +786,14 @@ namespace Hemex
                 this->lexers.set(name, callback);
             }
         }
-        Map<std::string,std::string> gather(std::string jobname)
+        void gather(std::string jobname)
         {
-            Map<std::string,std::string> memory;
-            MapPos<std::string, std::function<void (Hemex)>> bes;
+            MapPos<std::string, std::function<void (Hemex *)>> bes;
             bes = this->lexers.has(jobname);
             if(bes.finded)
             {
-                bes.mapitem.value(*this);
+                bes.mapitem.value(this);
             }
-            return memory;
         }
     };
     class HemexMapTree
@@ -840,3 +829,5 @@ namespace Hemex
         return content;
     }
 }
+
+#endif

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        ".env": "env",
+        "*.ts": "typescript",
+        "functional": "cpp"
+    }
+}
