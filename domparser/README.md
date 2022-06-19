@@ -74,7 +74,7 @@ result is native json object
             ]
         ]
     ]
-]'
+]
 ```
 -----------------------
 ## Limitations
