@@ -172,7 +172,7 @@ Hemex.prototype.toChar = function(n){
  * @returns {String}
  */
 Hemex.prototype.getLine = function(){
-    return this.readWhileFunc(function(){
+    return this.of(function(){
         switch(this.getChar())
         {
             case Hemex.EOL: return false;
@@ -186,11 +186,12 @@ Hemex.prototype.getLine = function(){
  * @param {(char:String)=>Boolean} e 
  * @returns {String}
  */
-Hemex.prototype.readWhileFunc = function(e,p){
-    let k = [];
+Hemex.prototype.of = function(e,p){
+    let k = [],count=0;
     while(this.isEnd()){
-        if(e(p)) k.push(this.getChar())
-        else return k.join('')
+        if(e(p,count)) k.push(this.getChar());
+        else return k.join('');
+        count++;
         this.nextChar();
     };
     return k.length == 0 ? false : k.join('')
@@ -222,7 +223,7 @@ Hemex.prototype.isNumber = function(reverse){
  * @returns {String}
  */
 Hemex.prototype.readNumbers = function(reverse){
-    return this.readWhileFunc(this.isNumber.bind(this),reverse)
+    return this.of(this.isNumber.bind(this),reverse)
 }
 /**
  * Controlling for current char type
@@ -259,7 +260,7 @@ Hemex.prototype.isLetter = function(reverse){
  * @returns {String}
  */
 Hemex.prototype.readLetters = function(reverse){
-    return this.readWhileFunc(this.isLetter.bind(this),reverse)
+    return this.of(this.isLetter.bind(this),reverse)
 }
 /**
  * Controlling for current char type
@@ -283,7 +284,7 @@ Hemex.prototype.isWhiteSpace = function(reverse){
  * @returns {String}
  */
 Hemex.prototype.readWhiteSpace = function(reverse){
-    return this.readWhileFunc(this.isWhiteSpace.bind(this),reverse)
+    return this.of(this.isWhiteSpace.bind(this),reverse)
 }
 /**
  * Controlling data
@@ -467,46 +468,43 @@ Hemex.prototype.readNumber = function(){
     return data.length == 0 ? false : [data.join(''),base]
 }
 
+Hemex.prototype.syntaxs = new Map();
 /**
- * @type {Map<string,{name:string,priority:number,caller()}>}
+ * 
+ * @param {string} name 
+ * @param {(hmx:Hemex, result: (result:any) => any,...args:any[]) => any} callback 
  */
-Hemex.prototype.lexers = new Map();
+Hemex.prototype.syntax = function(name, callback){
+    this.syntaxs.set(name, callback)
+}
 
-/**
- * @param {{name:string,priority:number}} options 
- * @param {(hmx:Hemex,any?) => any} caller
- */
- Hemex.prototype.addLexer = function(options,caller){
-    if(!this.lexers.has(options.name))
+Hemex.prototype.give = function(name, ...args){
+    let sandbox = this.syntaxs.get(name);
+    if(sandbox)
     {
-        this.lexers.set(options.name,{
-            name: options.name,
-            priority: options.priority,
-            caller: caller
-        })
-    }
-};
-Hemex.prototype.gatherStack = [];
-Hemex.prototype.gatherDepth = 0;
-/**
- * @param {string} jobname 
- * @param {any?} scope
- */
-Hemex.prototype.gather = function(jobname, scope){
-    this.gatherStack.push({jobname, depth: this.gatherDepth});
-    if(this.lexers.has(jobname))
-    {
-        let {caller} = this.lexers.get(jobname);
-        this.gatherDepth++;
-        try{
-            let result = caller(this, scope);
-            this.gatherDepth--;
-            return result;
-        }catch(i){
-            this.gatherDepth--;
-            return null;
+        let res = undefined;
+        hmx.beginPosition();
+        if(sandbox(
+            this,
+            arg => {
+                res = arg
+            },
+            ...args
+        ))
+        {
+            hmx.acceptPosition();
+            return res;
+        }else{
+            hmx.rejectPosition();
+            return res;
         }
     }
+}
+/**
+ * @param {Error} message
+ */
+Hemex.prototype.throw = function(message){
+    throw new Error(message)
 };
 
 module.exports = Hemex;
