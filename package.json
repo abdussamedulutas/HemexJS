@@ -1,6 +1,6 @@
 {
   "name": "@saqut/hemex",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Hemex Ultrafast Javascript Lexer and Parser ",
   "main": "Hemex.js",
   "repository": {
